@@ -8,9 +8,9 @@
 * The results are equivalent to RNAfold.
 */
 #define NDEBUG
+#include "Spark.hh"
 #include "base_types.hh"
 #include "PK_globals.hh"
-#include "cmdline.hh"
 #include "matrix.hh"
 #include "trace_arrow.hh"
 #include "sparse_tree.cc"
@@ -2734,7 +2734,6 @@ energy_t fold(const std::string& seq, sparse_tree sparse_tree, LocARNA::Matrix<e
 		compactify(ta);
 		compactify(taVP);
 	}
-	std::cout << "BE avoided: " << BE_avoided << std::endl;
 	return W[n];
 }
 
@@ -2779,26 +2778,10 @@ cand_pos_t capacity_of_candidates(const std::vector<cand_list_t>& CL_) {
 	return c;
 }
 
-void seqtoRNA(std::string &sequence){
-	bool DNA = false;
-    for (char &c : sequence) {
-      	if (c == 'T' || c == 't') {
-			c = 'U';
-			DNA = true;
-		}
-    }
-	noGU = DNA;
-}
+std::string Spark(std::string sequence, std::string restricted, energy_t &energy, cand_pos_t dangle_mod, bool pk, bool pknot, std::string paramFile = ""){
 
-
-std::string Spark(std::string sequence, std::string restricted, energy_t &energy, cand_pos_t dangle_mod, bool pk, bool pknot){
-
-	std::string current_file = __FILE__;
-	std::string current_dir = current_file.substr(0,current_file.length()-16);
 
 	std::string seq = sequence;
-
-	seqtoRNA(seq);
 	
 	cand_pos_t n = seq.length();
 
@@ -2807,11 +2790,10 @@ std::string Spark(std::string sequence, std::string restricted, energy_t &energy
 		exit(0);
 	}
 
-	pseudoknot = ~pknot;
+	pseudoknot = pknot;
 	pk_only = pk;
-	// Load DP09 file
-	// std::string file = current_dir + "params/parameters_DP09_Vienna.txt";
-	// vrna_params_load(file.c_str(), VRNA_PARAMETER_FORMAT_DEFAULT);
+	// Load Param file
+	if(paramFile != " ") vrna_params_load(paramFile.c_str(), VRNA_PARAMETER_FORMAT_DEFAULT);
 
 	SparseMFEFold sparsemfefold(seq,true,restricted);
 

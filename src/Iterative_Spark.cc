@@ -10,7 +10,8 @@
 #define NDEBUG
 #include "base_types.hh"
 #include "cmdline.hh"
-#include "Spark.cc"
+#include "Spark.hh"
+#include "sparse_tree.cc"
 #include <iostream>
 #include <iomanip>
 #include <vector>
@@ -26,20 +27,20 @@ extern "C" {
 }
 
 
-// std::string remove_structure_intersection(std::string restricted, std::string structure){
-// 	cand_pos_t length = structure.length();
-// 	for(cand_pos_t i=0; i< length; ++i){
-// 		if(restricted[i] == '(' || restricted[i] == ')') structure[i] = '.';
+std::string remove_structure_intersection(std::string restricted, std::string structure){
+	cand_pos_t length = structure.length();
+	for(cand_pos_t i=0; i< length; ++i){
+		if(restricted[i] == '(' || restricted[i] == ')') structure[i] = '.';
 		
-// 		if (output[i] == '['){
-// 			output[i] = '(';
-// 		}
-// 		if (output[i] == ']'){
-// 			output[i] = ')';
-// 		}
-// 	}
-// 	return output;
-// }
+		if (structure[i] == '['){
+			structure[i] = '(';
+		}
+		if (structure[i] == ']'){
+			structure[i] = ')';
+		}
+	}
+	return structure;
+}
 // /**
 //  * @brief returns a vector of pairs which represent the start and end indices for each disjoint substructure in the structure
 //  * 
@@ -54,46 +55,56 @@ extern "C" {
 // 	}
 // }
 
-// std::string obtainRelaxedStems(std::string restricted, std::string pkfree_structure, sparse_tree tree){
-// 	cand_pos_t length = restricted.length();
+std::string obtainRelaxedStems(std::string restricted, std::string pkfree_structure, sparse_tree &tree){
+	cand_pos_t length = restricted.length();
 
-// 	//Gresult <- G1
-// 	std::string relaxed = pkfree_structure;
+	//Gresult <- G1
+	std::string relaxed = pkfree_structure;
 
-// 	cand_pos_t i = 0;
-// 	cand_pos_t j = 0;
+	cand_pos_t i = 0;
+	cand_pos_t j = 0;
 
-// 	for(cand_pos_t k=0;k<length;k++){
-// 		if(tree.tree[k] > -1){
-// 			i = k;
-// 			j = G2_pair[k];
-// 			if(i < j){ //for each ij in G2
-// 				if( (G1[i] != G2[i]) && (G1[j] != G2[j]) ){//if ij not in G1
-// 					//include bulges of size 1
-// 					if(paired_structure(i-1,j+1,G1_pair,length) || paired_structure(i+1,j-1,G1_pair,length) ){
-// 						Gresult[i] = G2[i];
-// 						Gresult[j] = G2[j];
-// 					//include loops of size 1x1
-// 					}else if( paired_structure(i-2,j+1,G1_pair,length) || paired_structure(i-1,j+2,G1_pair,length) || \
-// 							paired_structure(i+1,j-2,G1_pair,length) || paired_structure(i+2,j-1,G1_pair,length) ){
-// 						Gresult[i] = G2[i];
-// 						Gresult[j] = G2[j];
-// 					//include loops of size 1x2 or 2x1
-// 					}else if( paired_structure(i-2,j+2,G1_pair,length) || paired_structure(i+2,j-2,G1_pair,length) ){
-// 						Gresult[i] = G2[i];
-// 						Gresult[j] = G2[j];
-// 					}else if( paired_structure(i-3,j+2,G1_pair,length) || paired_structure(i-2,j+3,G1_pair,length) || \
-// 							paired_structure(i+2,j-3,G1_pair,length) || paired_structure(i+3,j-2,G1_pair,length) ){
+	// for(cand_pos_t k=0;k<length;k++){
+	// 	if(tree.tree[k] > -1){
+	// 		i = k;
+	// 		j = tree.tree[k].pair;
+	// 		if(i < j){ //for each ij in G2
+	// 			if( (restricted[i] != pkfree_structure[i])){//if ij not in G1
+	// 				//include bulges of size 1
+	// 				if(paired_structure(i-1,j+1,G1_pair,length) || paired_structure(i+1,j-1,G1_pair,length) ){
+	// 					Gresult[i] = G2[i];
+	// 					Gresult[j] = G2[j];
+	// 				//include loops of size 1x1
+	// 				}else if( paired_structure(i-2,j+1,G1_pair,length) || paired_structure(i-1,j+2,G1_pair,length) || \
+	// 						paired_structure(i+1,j-2,G1_pair,length) || paired_structure(i+2,j-1,G1_pair,length) ){
+	// 					Gresult[i] = G2[i];
+	// 					Gresult[j] = G2[j];
+	// 				//include loops of size 1x2 or 2x1
+	// 				}else if( paired_structure(i-2,j+2,G1_pair,length) || paired_structure(i+2,j-2,G1_pair,length) ){
+	// 					Gresult[i] = G2[i];
+	// 					Gresult[j] = G2[j];
+	// 				}else if( paired_structure(i-3,j+2,G1_pair,length) || paired_structure(i-2,j+3,G1_pair,length) || \
+	// 						paired_structure(i+2,j-3,G1_pair,length) || paired_structure(i+3,j-2,G1_pair,length) ){
 
-// 						Gresult[i] = G2[i];
-// 						Gresult[j] = G2[j];
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-// }
-
+	// 					Gresult[i] = G2[i];
+	// 					Gresult[j] = G2[j];
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
+	return relaxed;
+}
+void seqtoRNA(std::string &sequence){
+	bool DNA = false;
+    for (char &c : sequence) {
+      	if (c == 'T' || c == 't') {
+			c = 'U';
+			DNA = true;
+		}
+    }
+	noGU = DNA;
+}
 
 /**
 * @brief Simple driver for @see Spark.
@@ -118,6 +129,8 @@ int main(int argc,char **argv) {
 	}
 	cand_pos_t n = seq.length();
 
+	seqtoRNA(seq);
+
 	std::string restricted;
     args_info.input_structure_given ? restricted = input_structure : restricted = std::string (n,'.');
 
@@ -130,56 +143,56 @@ int main(int argc,char **argv) {
 
 	std::string file= "";
 	args_info.paramFile_given ? file = parameter_file : file = "";
-	if(file!=""){
-		vrna_params_load(file.c_str(), VRNA_PARAMETER_FORMAT_DEFAULT);
-	}
+	Dangle dangle = 2;
+	if(args_info.dangles_given) dangle = dangles;
 
+	sparse_tree tree(restricted,n);
 	
 
 	bool verbose;
 	verbose = args_info.verbose_given;
 
-	bool mark_candidates;
-	mark_candidates = args_info.mark_candidates_given;
-	// sparse_tree tree(restricted,n);
+	energy_t method1_energy = INF;
+	energy_t method2_energy = INF;
+	energy_t method3_energy = INF;
+	energy_t method4_energy = INF;
 
-	// noGU = args_info.noGU_given;
-	// seqtoRNA(seq);
+	//Method1
+	std::string method1_structure = Spark(seq,restricted,method1_energy,dangle,false,true,file);
 
-	// SparseMFEFold sparsemfefold(seq,!args_info.noGC_given,restricted);
 
-	// if(args_info.dangles_given) sparsemfefold.params_->model_details.dangles = dangle_model;
-	// pseudoknot = ~args_info.pseudoknot_free_given;
-	// pk_only = args_info.pk_only_given;  
-	
-	// cmdline_parser_free(&args_info);
+	//Method2
+	std::string temp = Spark(seq,restricted,method2_energy,dangle,true,true,file);
+	temp = remove_structure_intersection(restricted,temp);
+	std::string method2_structure = Spark(seq,temp,method2_energy,dangle,false,true,file);
 
-	// int count = 0;
-	// for(int i = 1;i<=n;++i){
-	// 	if(tree.tree[i].pair > i || (tree.tree[i].pair < i && tree.tree[i].pair > 0)) count = 4;
-	// 	if(tree.tree[i].pair < 0 && count > 0){
-	// 		sparsemfefold.WI_Bbp[i] = (5 - count)*PUP_penalty;
-	// 		// sparsemfefold.WIP_Bbp[i] = (5 - count)*PUP_penalty;
-	// 		count--;
-	// 	}
-	// }
-	// count = 0;
-	// for(int i = n;i>0;--i){
-	// 	if(tree.tree[i].pair > i || (tree.tree[i].pair < i && tree.tree[i].pair > 0)) count = 4;
-	// 	if(tree.tree[i].pair < 0 && count > 0){
-	// 		sparsemfefold.WI_Bp[i] = (5 - count)*PUP_penalty;
-	// 		count--;
-	// 	}
-	// }
-	
-	// energy_t mfe = fold(sparsemfefold.seq_, tree,sparsemfefold.V_,sparsemfefold.cand_comp,sparsemfefold.CL_,sparsemfefold.CLWMB_,sparsemfefold.CLVP_,sparsemfefold.CLBE_,sparsemfefold.S_,sparsemfefold.S1_,sparsemfefold.params_,sparsemfefold.ta_,sparsemfefold.taVP_,sparsemfefold.W_,sparsemfefold.WM_,sparsemfefold.WM2_, sparsemfefold.dmli1_, sparsemfefold.dmli2_,sparsemfefold.VP_, sparsemfefold.WVe_, sparsemfefold.WV_, sparsemfefold.dwvp_, sparsemfefold.WMB_,sparsemfefold.dwmbi_,sparsemfefold.WMBP_,sparsemfefold.WMBA_,sparsemfefold.WI_,sparsemfefold.dwi1_,sparsemfefold.WIP_,sparsemfefold.dwip1_,sparsemfefold.WI_Bbp,sparsemfefold.WIP_Bbp,sparsemfefold.WIP_Bp,sparsemfefold.WI_Bp,sparsemfefold.n_,sparsemfefold.garbage_collect_);		
-	// std::string structure = trace_back(sparsemfefold.seq_,sparsemfefold.CL_,sparsemfefold.CLWMB_,sparsemfefold.CLBE_,sparsemfefold.CLVP_,sparsemfefold.cand_comp,sparsemfefold.structure_,sparsemfefold.params_,sparsemfefold.S_,sparsemfefold.S1_,sparsemfefold.ta_,sparsemfefold.taVP_,sparsemfefold.W_,sparsemfefold.WM_,sparsemfefold.WM2_,sparsemfefold.WI_Bbp,sparsemfefold.WIP_Bbp,sparsemfefold.WIP_Bp,sparsemfefold.WI_Bp,sparsemfefold.n_,tree, mark_candidates);
-	
-	// std::ostringstream smfe;
-	// smfe << std::setiosflags(std::ios::fixed) << std::setprecision(2) << mfe/100.0 ;
-	// std::cout << seq << std::endl;
+	//Method3
+	std::string temp2 = Spark(seq,restricted,method3_energy,dangle,false,false,file);
+	std::string relaxed = obtainRelaxedStems(restricted,temp2,tree);
+	std::string pk_structure = Spark(seq,relaxed,method3_energy,dangle,true,true,file);
+	temp2 = remove_structure_intersection(relaxed,pk_structure);
+	std::string method3_structure = Spark(seq,temp2,method3_energy,dangle,false,true,file);
 
-	// std::cout << structure << " ("<<smfe.str()<<")"<<std::endl;
+
+
+	//Method4
+
+
+
+	// energy_t energy = std::min(std::min(std::min(method1_energy,method2_energy),method3_energy),method4_energy);
+	std::cout << seq << std::endl;
+	std::ostringstream smfe;
+	smfe << std::setiosflags(std::ios::fixed) << std::setprecision(2) << method1_energy/100.0 ;
+
+	std::ostringstream smfe2;
+	smfe2 << std::setiosflags(std::ios::fixed) << std::setprecision(2) << method2_energy/100.0 ;
+
+	std::ostringstream smfe3;
+	smfe3 << std::setiosflags(std::ios::fixed) << std::setprecision(2) << method3_energy/100.0 ;
+
+	std::cout << "Method1: " << method1_structure << " ("<<smfe.str()<<")"<<std::endl;
+	std::cout << "Method2: " << method2_structure << " ("<<smfe2.str()<<")"<<std::endl;
+	std::cout << "Method3: " << method3_structure << " ("<<smfe3.str()<<")"<<std::endl;
 
 	return 0;
 }
