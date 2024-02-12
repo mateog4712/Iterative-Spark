@@ -47,13 +47,13 @@ std::string remove_structure_intersection(std::string restricted, std::string st
 //  * @param CL_ Candidate list
 //  * @return total number of candidates
 //  */
-// std::string find_disjoint_substructure(std::string structure){
+std::string find_disjoint_substructure(std::string structure, std::vector<cand_pos_t>){
 // 	cand_pos_t length = structure.length();
 // 	string restricted= std::string (n,'.')
 // 	for(cand_pos_t i = 0; i< length;++i){
 // 		// if()
 // 	}
-// }
+}
 
 std::string obtainRelaxedStems(std::string restricted, std::string pkfree_structure, sparse_tree &tree){
 	cand_pos_t length = restricted.length();
@@ -176,6 +176,7 @@ int main(int argc,char **argv) {
 
 
 	//Method4
+	std::vector< std::pair<int,int> > disjoint_substructure_index;
 
 
 
