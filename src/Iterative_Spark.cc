@@ -12,6 +12,7 @@
 #include "cmdline.hh"
 #include "Spark.hh"
 #include "sparse_tree.cc"
+#include <sstream>
 #include <iostream>
 #include <iomanip>
 #include <vector>
