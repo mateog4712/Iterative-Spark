@@ -33,12 +33,9 @@ std::string remove_structure_intersection(std::string restricted, std::string st
 	for(cand_pos_t i=0; i< length; ++i){
 		if(restricted[i] == '(' || restricted[i] == ')') structure[i] = '.';
 		
-		if (structure[i] == '['){
-			structure[i] = '(';
-		}
-		if (structure[i] == ']'){
-			structure[i] = ')';
-		}
+		if (structure[i] == '[') structure[i] = '(';
+		
+		if (structure[i] == ']') structure[i] = ')';
 	}
 	return structure;
 }
@@ -50,50 +47,143 @@ std::string remove_structure_intersection(std::string restricted, std::string st
 //  */
 std::string find_disjoint_substructure(std::string structure, std::vector<cand_pos_t>){
 // 	cand_pos_t length = structure.length();
-// 	string restricted= std::string (n,'.')
+	std::string restricted= structure;
 // 	for(cand_pos_t i = 0; i< length;++i){
 // 		// if()
 // 	}
+	return restricted;
+}
+/**
+ * @brief Fills the pair array
+ * p_table will contain the index of each base pair
+ * X or x tells the program the base cannot pair and . sets it as unpaired but can pair
+ * @param structure Input structure
+ * @param p_table Restricted array
+ */
+void detect_pairs(const std::string &structure, std::vector<cand_pos_t> &p_table){
+	cand_pos_t i, j, count = 0, length = structure.length(),last_j=length;
+	std::vector<cand_pos_t>  pairs;
+	pairs.push_back(length);
+
+	for (i=length-1; i >=0; --i){
+		if ((structure[i] == 'x') || (structure[i] == 'X'))
+			p_table[i] = -1;
+		else if (structure[i] == '.')
+			p_table[i] = -2;
+		if (structure[i] == ')'){
+			pairs.push_back(i);
+			count++;
+		}
+		if (structure[i] == '('){
+			j = pairs[pairs.size()-1];
+			pairs.erase(pairs.end()-1);
+			p_table[i] = j;
+			p_table[j] = i;
+			count--;
+		}
+	}
+	pairs.pop_back();
+	if (pairs.size() != 0)
+	{
+		fprintf (stderr, "The given structure is not valid: more left parentheses than right parentheses: \n");
+		exit (1);
+	}
 }
 
-std::string obtainRelaxedStems(std::string restricted, std::string pkfree_structure, sparse_tree &tree){
-	cand_pos_t length = restricted.length();
+cand_pos_t paired_structure(cand_pos_t i, cand_pos_t j, std::vector<cand_pos_t> &pair_index){
+	cand_pos_t n = pair_index.size();
+	return (i >= 0 && j < n && (pair_index[i] == j));
+}
+
+std::string obtainRelaxedStems(std::string restricted, std::string pkfree_structure){
+	cand_pos_t n = restricted.length();
 
 	//Gresult <- G1
-	std::string relaxed = pkfree_structure;
+	std::string relaxed = restricted;
 
 	cand_pos_t i = 0;
 	cand_pos_t j = 0;
+	
+	std::vector<cand_pos_t> G1_pair;
+	std::vector<cand_pos_t> G2_pair;
+	G1_pair.resize(n,0);
+	G2_pair.resize(n,0);
+	detect_pairs(restricted,G1_pair);
+	detect_pairs(pkfree_structure,G2_pair);
 
-	// for(cand_pos_t k=0;k<length;k++){
-	// 	if(tree.tree[k] > -1){
-	// 		i = k;
-	// 		j = tree.tree[k].pair;
-	// 		if(i < j){ //for each ij in G2
-	// 			if( (restricted[i] != pkfree_structure[i])){//if ij not in G1
-	// 				//include bulges of size 1
-	// 				if(paired_structure(i-1,j+1,G1_pair,length) || paired_structure(i+1,j-1,G1_pair,length) ){
-	// 					Gresult[i] = G2[i];
-	// 					Gresult[j] = G2[j];
-	// 				//include loops of size 1x1
-	// 				}else if( paired_structure(i-2,j+1,G1_pair,length) || paired_structure(i-1,j+2,G1_pair,length) || \
-	// 						paired_structure(i+1,j-2,G1_pair,length) || paired_structure(i+2,j-1,G1_pair,length) ){
-	// 					Gresult[i] = G2[i];
-	// 					Gresult[j] = G2[j];
-	// 				//include loops of size 1x2 or 2x1
-	// 				}else if( paired_structure(i-2,j+2,G1_pair,length) || paired_structure(i+2,j-2,G1_pair,length) ){
-	// 					Gresult[i] = G2[i];
-	// 					Gresult[j] = G2[j];
-	// 				}else if( paired_structure(i-3,j+2,G1_pair,length) || paired_structure(i-2,j+3,G1_pair,length) || \
-	// 						paired_structure(i+2,j-3,G1_pair,length) || paired_structure(i+3,j-2,G1_pair,length) ){
 
-	// 					Gresult[i] = G2[i];
-	// 					Gresult[j] = G2[j];
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
+	for(int k=0;k<n;++k){
+		if(G2_pair[k] > -1){
+			i = k;
+			j = G2_pair[k];
+			if(i < j){ //for each ij in G2
+				if( (restricted[i] != pkfree_structure[i])){//if ij not in G1
+					//include stacking base pairs
+					if(paired_structure(i-1,j+1,G1_pair)){
+						relaxed[i] = pkfree_structure[i];
+						relaxed[j] = pkfree_structure[j];
+						G1_pair[i] = j;
+						G1_pair[j] = i;
+					//include bulges of size 1
+					}else if(paired_structure(i-2,j+1,G1_pair) || paired_structure(i-1,j+2,G1_pair)){
+						relaxed[i] = pkfree_structure[i];
+						relaxed[j] = pkfree_structure[j];
+						G1_pair[i] = j;
+						G1_pair[j] = i;
+					//include loops of size 1x1
+					}else if(paired_structure(i-2,j+2,G1_pair)){
+						relaxed[i] = pkfree_structure[i];
+						relaxed[j] = pkfree_structure[j];
+						G1_pair[i] = j;
+						G1_pair[j] = i;
+					//include loops of size 1x2 or 2x1
+					}else if( paired_structure(i-3,j+2,G1_pair) || paired_structure(i-2,j+3,G1_pair)){
+						relaxed[i] = pkfree_structure[i];
+						relaxed[j] = pkfree_structure[j];
+						G1_pair[i] = j;
+						G1_pair[j] = i;
+					}
+				}
+			}
+		}
+	}
+
+	for(int k=n-1;k>=0;--k){
+		if(G2_pair[k] > -1){
+			i = k;
+			j = G2_pair[k];
+			if(i < j){ //for each ij in G2
+				if( (restricted[i] != pkfree_structure[i])){//if ij not in G1
+					//include stacking base pairs
+					if(paired_structure(i+1,j-1,G1_pair) ){
+						relaxed[i] = pkfree_structure[i];
+						relaxed[j] = pkfree_structure[j];
+						G1_pair[i] = j;
+						G1_pair[j] = i;
+						
+					//include bulges of size 1
+					}else if(paired_structure(i+1,j-2,G1_pair) || paired_structure(i+2,j-1,G1_pair) ){
+						relaxed[i] = pkfree_structure[i];
+						relaxed[j] = pkfree_structure[j];
+						G1_pair[i] = j;
+						G1_pair[j] = i;
+					//include loops of size 1x1
+					}else if(paired_structure(i+2,j-2,G1_pair) ){
+						relaxed[i] = pkfree_structure[i];
+						relaxed[j] = pkfree_structure[j];
+						G1_pair[i] = j;
+						G1_pair[j] = i;
+					//include loops of size 1x2 or 2x1
+					}else if(paired_structure(i+2,j-3,G1_pair) || paired_structure(i+3,j-2,G1_pair) ){
+						relaxed[i] = pkfree_structure[i];
+						relaxed[j] = pkfree_structure[j];
+						G1_pair[i] = j;
+						G1_pair[j] = i;
+					}
+				}
+			}
+		}
+	}
 	return relaxed;
 }
 void seqtoRNA(std::string &sequence){
@@ -163,16 +253,16 @@ int main(int argc,char **argv) {
 
 
 	//Method2
-	std::string temp = Spark(seq,restricted,method2_energy,dangle,true,true,file);
-	temp = remove_structure_intersection(restricted,temp);
-	std::string method2_structure = Spark(seq,temp,method2_energy,dangle,false,true,file);
+	std::string pk_only_output = Spark(seq,restricted,method2_energy,dangle,true,true,file);
+	std::string pk_free_removed = remove_structure_intersection(restricted,pk_only_output);
+	std::string method2_structure = Spark(seq,pk_free_removed,method2_energy,dangle,false,true,file);
 
 	//Method3
-	std::string temp2 = Spark(seq,restricted,method3_energy,dangle,false,false,file);
-	std::string relaxed = obtainRelaxedStems(restricted,temp2,tree);
-	std::string pk_structure = Spark(seq,relaxed,method3_energy,dangle,true,true,file);
-	temp2 = remove_structure_intersection(relaxed,pk_structure);
-	std::string method3_structure = Spark(seq,temp2,method3_energy,dangle,false,true,file);
+	std::string pk_free = Spark(seq,restricted,method3_energy,dangle,false,false,file);
+	std::string relaxed = obtainRelaxedStems(restricted,pk_free);
+	pk_only_output = Spark(seq,relaxed,method3_energy,dangle,true,true,file);
+	pk_free_removed = remove_structure_intersection(relaxed,pk_only_output);
+	std::string method3_structure = Spark(seq,pk_free_removed,method3_energy,dangle,false,true,file);
 
 
 
