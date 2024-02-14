@@ -235,7 +235,7 @@ int main(int argc,char **argv) {
 	std::string file= "";
 	args_info.paramFile_given ? file = parameter_file : file = "";
 	Dangle dangle = 2;
-	if(args_info.dangles_given) dangle = dangles;
+	if(args_info.dangles_given) dangle = dangle_model;
 
 	sparse_tree tree(restricted,n);
 	
@@ -254,7 +254,9 @@ int main(int argc,char **argv) {
 
 	//Method2
 	std::string pk_only_output = Spark(seq,restricted,method2_energy,dangle,true,true,file);
+	std::cout << pk_only_output << "  " << method2_energy << std::endl;
 	std::string pk_free_removed = remove_structure_intersection(restricted,pk_only_output);
+	std::cout << pk_free_removed << std::endl;
 	std::string method2_structure = Spark(seq,pk_free_removed,method2_energy,dangle,false,true,file);
 
 	//Method3
