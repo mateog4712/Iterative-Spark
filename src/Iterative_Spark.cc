@@ -93,6 +93,7 @@ void detect_pairs(const std::string &structure, std::vector<cand_pos_t> &p_table
 		}
 	}
 	pairs.pop_back();
+	if (pairs.size() != 0) std::cout << pairs[0] << std::endl << structure << std::endl;
 	if (pairs.size() != 0)
 	{
 		fprintf (stderr, "The given structure is not valid: more left parentheses than right parentheses: \n");
@@ -308,12 +309,12 @@ int main(int argc,char **argv) {
 		cand_pos_t j = current_substructure_index.second;
 		energy_t energy = INF;
 
-		std::string subsequence = seq.substr(i,j);
-		std::string substructure = restricted.substr(i,j);
+		std::string subsequence = seq.substr(i,j-i+1);
+		std::string substructure = restricted.substr(i,j-i+1);
 
 		std::string pk_free = Spark(subsequence,substructure,energy,dangle,false,false,file);
 		std::string relaxed = obtainRelaxedStems(substructure,pk_free);
-		disjoint_structure.replace(i,j,relaxed);
+		disjoint_structure.replace(i,j-i+1,relaxed);
 	}
 	std::string method4_structure = method2(seq,disjoint_structure,method4_energy,dangle,file);
 	if(method4_energy < final_energy){

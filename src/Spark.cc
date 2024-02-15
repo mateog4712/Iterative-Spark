@@ -2790,6 +2790,8 @@ std::string Spark(std::string sequence, std::string restricted, energy_t &energy
 	cand_pos_t n = seq.length();
 
 	if(restricted != "" && restricted.length() != n ){
+		std::cout << sequence << std::endl;
+		std::cout << restricted << std::endl;
 		std::cout << "input sequence and structure are not the same size" << std::endl;
 		exit(0);
 	}
