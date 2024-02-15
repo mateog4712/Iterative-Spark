@@ -45,13 +45,23 @@ std::string remove_structure_intersection(std::string restricted, std::string st
 //  * @param CL_ Candidate list
 //  * @return total number of candidates
 //  */
-std::string find_disjoint_substructure(std::string structure, std::vector<cand_pos_t>){
-// 	cand_pos_t length = structure.length();
-	std::string restricted= structure;
-// 	for(cand_pos_t i = 0; i< length;++i){
-// 		// if()
-// 	}
-	return restricted;
+void find_disjoint_substructure(std::string structure, std::vector< std::pair<int,int> > &pair_vector){
+	cand_pos_t n = structure.length();
+	cand_pos_t count = 0;
+	cand_pos_t i = 0;
+	for(cand_pos_t k=0; k<n;++k){
+		if(structure[k] == '('){
+			if(count == 0) i = k;
+			count++;
+
+		}else if(structure[k] == ')'){
+			count--;
+			if(count == 0){
+				std::pair <int,int> ij_pair (i,k);
+				pair_vector.push_back(ij_pair);
+			}
+		}
+	}
 }
 /**
  * @brief Fills the pair array
@@ -106,12 +116,12 @@ std::string obtainRelaxedStems(std::string restricted, std::string pkfree_struct
 	
 	std::vector<cand_pos_t> G1_pair;
 	std::vector<cand_pos_t> G2_pair;
-	G1_pair.resize(n,0);
-	G2_pair.resize(n,0);
+	G1_pair.resize(n,-2);
+	G2_pair.resize(n,-2);
 	detect_pairs(restricted,G1_pair);
 	detect_pairs(pkfree_structure,G2_pair);
 
-
+	
 	for(int k=0;k<n;++k){
 		if(G2_pair[k] > -1){
 			i = k;
@@ -196,6 +206,20 @@ void seqtoRNA(std::string &sequence){
     }
 	noGU = DNA;
 }
+std::string remove_x(std::string structure){
+	for(char &c: structure) {if(c == 'x') c = '.';}
+	return structure; 
+}
+
+std::string method2(std::string &seq, std::string &restricted, energy_t &method2_energy, Dangle dangle, std::string file){
+
+	std::string pk_only_output = Spark(seq,restricted,method2_energy,dangle,true,true,file);
+	std::string pk_free_removed = remove_structure_intersection(restricted,pk_only_output);
+	std::string no_x_restricted = remove_x(restricted);
+
+	if(pk_only_output != no_x_restricted) return Spark(seq,pk_free_removed,method2_energy,dangle,false,true,file);
+	else return pk_only_output;
+}
 
 /**
 * @brief Simple driver for @see Spark.
@@ -247,36 +271,68 @@ int main(int argc,char **argv) {
 	energy_t method2_energy = INF;
 	energy_t method3_energy = INF;
 	energy_t method4_energy = INF;
+	energy_t final_energy = INF;
+
+	std::string final_structure;
 
 	//Method1
 	std::string method1_structure = Spark(seq,restricted,method1_energy,dangle,false,true,file);
-
+	if(method1_energy < final_energy){
+		final_energy = method1_energy;
+		final_structure=method1_structure;
+	}
 
 	//Method2
-	std::string pk_only_output = Spark(seq,restricted,method2_energy,dangle,true,true,file);
-	std::cout << pk_only_output << "  " << method2_energy << std::endl;
-	std::string pk_free_removed = remove_structure_intersection(restricted,pk_only_output);
-	std::cout << pk_free_removed << std::endl;
-	std::string method2_structure = Spark(seq,pk_free_removed,method2_energy,dangle,false,true,file);
-
+	std::string method2_structure = method2(seq,restricted,method2_energy,dangle,file);
+	if(method2_energy < final_energy){
+		final_energy = method2_energy;
+		final_structure=method2_structure;
+	}
 	//Method3
 	std::string pk_free = Spark(seq,restricted,method3_energy,dangle,false,false,file);
 	std::string relaxed = obtainRelaxedStems(restricted,pk_free);
-	pk_only_output = Spark(seq,relaxed,method3_energy,dangle,true,true,file);
-	pk_free_removed = remove_structure_intersection(relaxed,pk_only_output);
-	std::string method3_structure = Spark(seq,pk_free_removed,method3_energy,dangle,false,true,file);
+	std::string method3_structure = method2(seq,relaxed,method3_energy,dangle,file);
+	if(method3_energy < final_energy){
+		final_energy = method3_energy;
+		final_structure=method3_structure;
+	}
 
 
 
 	//Method4
 	std::vector< std::pair<int,int> > disjoint_substructure_index;
+	find_disjoint_substructure(restricted,disjoint_substructure_index);
+	std::string disjoint_structure = restricted;
+	for(auto current_substructure_index : disjoint_substructure_index){
+		cand_pos_t i = current_substructure_index.first;
+		cand_pos_t j = current_substructure_index.second;
+		energy_t energy = INF;
+
+		std::string subsequence = seq.substr(i,j);
+		std::string substructure = restricted.substr(i,j);
+
+		std::string pk_free = Spark(subsequence,substructure,energy,dangle,false,false,file);
+		std::string relaxed = obtainRelaxedStems(substructure,pk_free);
+		disjoint_structure.replace(i,j,relaxed);
+	}
+	std::string method4_structure = method2(seq,disjoint_structure,method4_energy,dangle,file);
+	if(method4_energy < final_energy){
+		final_energy = method4_energy;
+		final_structure=method4_structure;
+	}
 
 
 
-	// energy_t energy = std::min(std::min(std::min(method1_energy,method2_energy),method3_energy),method4_energy);
 	std::cout << seq << std::endl;
+	
 	std::ostringstream smfe;
-	smfe << std::setiosflags(std::ios::fixed) << std::setprecision(2) << method1_energy/100.0 ;
+	smfe << std::setiosflags(std::ios::fixed) << std::setprecision(2) << final_energy/100.0 ;
+	std::cout << final_structure << " ("<<smfe.str()<<")"<<std::endl;
+	
+	
+	if(args_info.verbose_given){
+	std::ostringstream smfe1;
+	smfe1 << std::setiosflags(std::ios::fixed) << std::setprecision(2) << method1_energy/100.0 ;
 
 	std::ostringstream smfe2;
 	smfe2 << std::setiosflags(std::ios::fixed) << std::setprecision(2) << method2_energy/100.0 ;
@@ -284,9 +340,16 @@ int main(int argc,char **argv) {
 	std::ostringstream smfe3;
 	smfe3 << std::setiosflags(std::ios::fixed) << std::setprecision(2) << method3_energy/100.0 ;
 
-	std::cout << "Method1: " << method1_structure << " ("<<smfe.str()<<")"<<std::endl;
+	std::ostringstream smfe4;
+	smfe4 << std::setiosflags(std::ios::fixed) << std::setprecision(2) << method4_energy/100.0 ;
+
+	std::cout << "Method1: " << method1_structure << " ("<<smfe1.str()<<")"<<std::endl;
 	std::cout << "Method2: " << method2_structure << " ("<<smfe2.str()<<")"<<std::endl;
 	std::cout << "Method3: " << method3_structure << " ("<<smfe3.str()<<")"<<std::endl;
+	std::cout << "Method4: " << method4_structure << " ("<<smfe4.str()<<")"<<std::endl;
+	}
+	
+	cmdline_parser_free(&args_info);
 
 	return 0;
 }
