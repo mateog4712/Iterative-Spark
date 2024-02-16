@@ -2261,6 +2261,12 @@ energy_t compute_VP(cand_pos_t i, cand_pos_t j, cand_pos_t b_ij, cand_pos_t bp_i
 
 	energy_t vp_h = std::min({m1,m2,m3});
 	energy_t vp_iloop = std::min(m4,m5);
+	if(m4<m5){
+		best_k = i+1;
+		best_l = j-1;
+		cand_pos_t ip1_mod = (i+1)%(MAXLOOP+1);
+		best_e = VP(ip1_mod,j-1);
+	}
 	energy_t vp_split = m6;
 	vp = std::min({vp_h,vp_iloop,vp_split});
 
