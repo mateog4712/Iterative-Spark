@@ -2678,7 +2678,8 @@ energy_t fold(const std::string& seq, sparse_tree sparse_tree, LocARNA::Matrix<e
 			w  = std::min({w_v, w_split,w_wmb});
 			wm = std::min({wm_v, wm_split,wm_wmb});
 
-			if ( w_v < w_split || wm_v < wm_split || paired) {
+			// Some case of WI candidate splits will show INf as a vkj value as we are unable to do dangle versions yet but there are dangle candidates
+			if (w_v < w_split || wm_v < wm_split || wi_v < wi_split || wip_v < wip_split || paired) {
 				// cand_pos_t k_mod = k%(MAXLOOP+1);
 				// Encode the dangles into the energies
 				energy_t w_enc = (w_v << 2) | d;
