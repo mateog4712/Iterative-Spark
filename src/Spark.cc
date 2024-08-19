@@ -2516,7 +2516,7 @@ energy_t fold(const std::string& seq, sparse_tree sparse_tree, LocARNA::Matrix<e
 
 				// Start of VP ---- Will have to change the bounds to 1 to n instead of 0 to n-1
 				bool weakly_closed_ij = sparse_tree.weakly_closed(i,j);
-				if ( weakly_closed_ij || sparse_tree.tree[i].pair > -1 || sparse_tree.tree[j].pair > -1 || ptype_closing == 0)	{
+				if ( weakly_closed_ij || sparse_tree.tree[i].pair >= -1 || sparse_tree.tree[j].pair >= -1 || ptype_closing == 0)	{
 				
 					VP(i_mod,j) = INF;
 					
@@ -2789,7 +2789,7 @@ cand_pos_t capacity_of_candidates(const std::vector<cand_list_t>& CL_) {
 	return c;
 }
 
-std::string Spark(std::string sequence, std::string restricted, energy_t &energy, cand_pos_t dangle_mod, bool pk, bool pknot, std::string paramFile = ""){
+std::string Spark(std::string sequence, std::string restricted, energy_t &energy, cand_pos_t dangle_mod, bool pk, bool pknot){
 
 
 	std::string seq = sequence;
@@ -2805,8 +2805,6 @@ std::string Spark(std::string sequence, std::string restricted, energy_t &energy
 
 	pseudoknot = pknot;
 	pk_only = pk;
-	// Load Param file
-	if(paramFile != " ") vrna_params_load(paramFile.c_str(), VRNA_PARAMETER_FORMAT_DEFAULT);
 
 	SparseMFEFold sparsemfefold(seq,true,restricted);
 
@@ -2819,7 +2817,6 @@ std::string Spark(std::string sequence, std::string restricted, energy_t &energy
 		if(tree.tree[i].pair > i || (tree.tree[i].pair < i && tree.tree[i].pair > 0)) count = 4;
 		if(tree.tree[i].pair < 0 && count > 0){
 			sparsemfefold.WI_Bbp[i] = (5 - count)*PUP_penalty;
-			// sparsemfefold.WIP_Bbp[i] = (5 - count)*PUP_penalty;
 			count--;
 		}
 	}

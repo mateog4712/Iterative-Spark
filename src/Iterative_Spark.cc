@@ -214,13 +214,12 @@ std::string remove_x(std::string structure){
 	return structure; 
 }
 
-std::string method2(std::string &seq, std::string &restricted, energy_t &method2_energy, Dangle dangle, std::string file){
+std::string method2(std::string &seq, std::string &restricted, energy_t &method2_energy, Dangle dangle){
 
-	std::string pk_only_output = Spark(seq,restricted,method2_energy,dangle,true,true,file);
+	std::string pk_only_output = Spark(seq,restricted,method2_energy,dangle,true,true);
 	std::string pk_free_removed = remove_structure_intersection(restricted,pk_only_output);
 	std::string no_x_restricted = remove_x(restricted);
-
-	if(pk_only_output != no_x_restricted) return Spark(seq,pk_free_removed,method2_energy,dangle,false,true,file);
+	if(pk_only_output != no_x_restricted) return Spark(seq,pk_free_removed,method2_energy,dangle,false,true);
 	else return pk_only_output;
 }
 
@@ -247,6 +246,8 @@ int main(int argc,char **argv) {
 	}
 	cand_pos_t n = seq.length();
 
+	int dangle = args_info.dangles_given ? dangle_model : 2;
+
 	seqtoRNA(seq);
 
 	std::string restricted;
@@ -259,10 +260,14 @@ int main(int argc,char **argv) {
 		exit(0);
 	}
 
-	std::string file= "";
+	std::string file;
 	args_info.paramFile_given ? file = parameter_file : file = "";
-	Dangle dangle = 2;
-	if(args_info.dangles_given) dangle = dangle_model;
+	if(file!=""){
+		vrna_params_load(file.c_str(), VRNA_PARAMETER_FORMAT_DEFAULT);
+	}
+	else if (seq.find('T') != std::string::npos){
+		vrna_params_load_DNA_Mathews2004();
+	}
 
 	sparse_tree tree(restricted,n);
 	
@@ -279,23 +284,23 @@ int main(int argc,char **argv) {
 	std::string final_structure;
 
 	//Method1
-	std::string method1_structure = Spark(seq,restricted,method1_energy,dangle,false,true,file);
+	std::string method1_structure = Spark(seq,restricted,method1_energy,dangle,false,true);
 	if(method1_energy < final_energy){
 		final_energy = method1_energy;
 		final_structure=method1_structure;
 	}
 
 	//Method2
-	std::string method2_structure = method2(seq,restricted,method2_energy,dangle,file);
+	std::string method2_structure = method2(seq,restricted,method2_energy,dangle);
 	if(method2_energy < final_energy){
 		final_energy = method2_energy;
 		final_structure=method2_structure;
 	}
 	//Method3
-	std::string pk_free = Spark(seq,restricted,method3_energy,dangle,false,false,file);
+	std::string pk_free = Spark(seq,restricted,method3_energy,dangle,false,false);
 	std::string relaxed = obtainRelaxedStems(restricted,pk_free);
 	for(int i =0; i< restricted.length();++i) if(restricted[i] == 'x') relaxed[i] = 'x';
-	std::string method3_structure = method2(seq,relaxed,method3_energy,dangle,file);
+	std::string method3_structure = method2(seq,relaxed,method3_energy,dangle);
 	if(method3_energy < final_energy){
 		final_energy = method3_energy;
 		final_structure=method3_structure;
@@ -315,12 +320,12 @@ int main(int argc,char **argv) {
 		std::string subsequence = seq.substr(i,j-i+1);
 		std::string substructure = restricted.substr(i,j-i+1);
 
-		std::string pk_free = Spark(subsequence,substructure,energy,dangle,false,false,file);
+		std::string pk_free = Spark(subsequence,substructure,energy,dangle,false,false);
 		std::string relaxed = obtainRelaxedStems(substructure,pk_free);
 		for(int i =0; i< substructure.length();++i) if(substructure[i] == 'x') relaxed[i] = 'x';
 		disjoint_structure.replace(i,j-i+1,relaxed);
 	}
-	std::string method4_structure = method2(seq,disjoint_structure,method4_energy,dangle,file);
+	std::string method4_structure = method2(seq,disjoint_structure,method4_energy,dangle);
 	if(method4_energy < final_energy){
 		final_energy = method4_energy;
 		final_structure=method4_structure;
