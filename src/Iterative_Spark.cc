@@ -36,6 +36,8 @@ std::string remove_structure_intersection(std::string restricted, std::string st
 		if (structure[i] == '[') structure[i] = '(';
 		
 		if (structure[i] == ']') structure[i] = ')';
+
+		if(restricted[i] == 'x') structure[i] = 'x';
 	}
 	return structure;
 }
@@ -292,6 +294,7 @@ int main(int argc,char **argv) {
 	//Method3
 	std::string pk_free = Spark(seq,restricted,method3_energy,dangle,false,false,file);
 	std::string relaxed = obtainRelaxedStems(restricted,pk_free);
+	for(int i =0; i< restricted.length();++i) if(restricted[i] == 'x') relaxed[i] = 'x';
 	std::string method3_structure = method2(seq,relaxed,method3_energy,dangle,file);
 	if(method3_energy < final_energy){
 		final_energy = method3_energy;
@@ -314,6 +317,7 @@ int main(int argc,char **argv) {
 
 		std::string pk_free = Spark(subsequence,substructure,energy,dangle,false,false,file);
 		std::string relaxed = obtainRelaxedStems(substructure,pk_free);
+		for(int i =0; i< substructure.length();++i) if(substructure[i] == 'x') relaxed[i] = 'x';
 		disjoint_structure.replace(i,j-i+1,relaxed);
 	}
 	std::string method4_structure = method2(seq,disjoint_structure,method4_energy,dangle,file);
